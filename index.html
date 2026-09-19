@@ -21,16 +21,6 @@
   .wrap{max-width:900px;margin:0 auto;padding:0 22px;position:relative;z-index:2}
 
   #comet{position:fixed;inset:0;z-index:-1;pointer-events:none}
-  /* corner balloons — small, tucked bottom-left, gentle bob */
-  .corner-bunch{position:fixed;left:14px;bottom:12px;z-index:1;pointer-events:none;
-    display:flex;align-items:flex-end;gap:3px;animation:bob 4.5s ease-in-out infinite}
-  .corner-bunch .cb{border-radius:50%/55% 55% 50% 50%;opacity:.92;position:relative}
-  .corner-bunch .cb::after{content:"";position:absolute;left:50%;top:100%;width:1.5px;height:26px;
-    background:rgba(255,255,255,.3)}
-  .cb.c1{width:26px;height:34px;background:radial-gradient(circle at 35% 30%,#ffffff88,transparent 42%),#ff6b9d}
-  .cb.c2{width:19px;height:26px;margin-bottom:12px;background:radial-gradient(circle at 35% 30%,#ffffff88,transparent 42%),#e8b86d}
-  .cb.c3{width:22px;height:29px;margin-bottom:5px;background:radial-gradient(circle at 35% 30%,#ffffff88,transparent 42%),#c9a7ff}
-  @keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-12px) rotate(2deg)}}
 
   /* hero */
   .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
@@ -40,7 +30,7 @@
     text-shadow:0 4px 44px rgba(0,0,0,.7)}
   h1 em{font-style:italic;background:linear-gradient(90deg,var(--gold),var(--pink),var(--lav));
     -webkit-background-clip:text;background-clip:text;color:transparent}
-  .sub{color:var(--muted);letter-spacing:.18em;text-transform:uppercase;font-size:.82rem}
+  .sub{color:rgba(253,246,238,.92);letter-spacing:.18em;text-transform:uppercase;font-size:.85rem;font-weight:700}
   .count{display:flex;gap:12px;margin:30px 0 8px;flex-wrap:wrap;justify-content:center}
   .cell{min-width:86px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.14);
     border-radius:18px;padding:14px 10px;backdrop-filter:blur(10px)}
@@ -156,7 +146,6 @@
 <canvas id="bg3d"></canvas>
 <div class="vignette"></div>
 <canvas id="comet"></canvas>
-<div class="corner-bunch"><div class="cb c1"></div><div class="cb c2"></div><div class="cb c3"></div></div>
 <canvas id="confetti"></canvas>
 <audio id="bgm" preload="auto" loop src="orchestral.mp3"></audio>
 
@@ -395,9 +384,9 @@ function launchComet(){
   comets.push({
     x: dir === 1 ? -80 : mc.width + 80,
     y: Math.random() * mc.height * .3 + 20,
-    vx: dir * (8 + Math.random() * 5),
-    vy: 3.5 + Math.random() * 2.5,
-    life: 110, age: 0, broke: false, trail: []
+    vx: dir * (4 + Math.random() * 2.5),
+    vy: 1.4 + Math.random() * 1,
+    life: 300, age: 0, broke: false, trail: []
   });
 }
 function breakStar(c){
@@ -408,7 +397,7 @@ function breakStar(c){
       c:['#ffffff','#ffd9a0','#ffb3c8','#e8b86d'][Math.random()*4|0], life:70+Math.random()*40});
   }
 }
-setInterval(()=>{ if(document.visibilityState==='visible' && Math.random()<.75) launchComet(); }, 8000);
+setInterval(()=>{ if(document.visibilityState==='visible' && comets.length===0) launchComet(); }, 2000);
 setTimeout(launchComet, 2500);
 (function cometLoop(){
   requestAnimationFrame(cometLoop);

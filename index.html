@@ -30,9 +30,6 @@
     text-shadow:0 4px 44px rgba(0,0,0,.7)}
   h1 em{font-style:italic;background:linear-gradient(90deg,var(--gold),var(--pink),var(--lav));
     -webkit-background-clip:text;background-clip:text;color:transparent}
-  .hero h1 em .hl{display:inline-block;transition:text-shadow .6s ease,transform .6s ease}
-  .hero h1 em .hl.hit{text-shadow:0 0 16px #fff,0 0 46px var(--gold),0 0 100px var(--pink);
-    transform:scale(1.2) rotate(-3deg)}
   .sub{color:rgba(253,246,238,.92);letter-spacing:.18em;text-transform:uppercase;font-size:.85rem;font-weight:700}
   .count{display:flex;gap:12px;margin:30px 0 8px;flex-wrap:wrap;justify-content:center}
   .cell{min-width:86px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.14);
@@ -382,61 +379,22 @@ const mc = document.getElementById('comet'), mg = mc.getContext('2d');
 function sizeComet(){ mc.width = innerWidth; mc.height = innerHeight; }
 addEventListener('resize', sizeComet); sizeComet();
 let comets = [], cfrags = [];
-/* split Anushka into letters so the star can kiss one */
-(function splitLetters(){
-  const emEl = document.querySelector('.hero h1 em');
-  if(!emEl || emEl.dataset.split) return;
-  emEl.dataset.split = '1';
-  emEl.innerHTML = [...emEl.textContent].map(ch=>`<span class="hl">${ch}</span>`).join('');
-})();
-function letterTarget(){
-  if(scrollY > innerHeight*.8) return null;
-  const spots = [...document.querySelectorAll('.hero h1 em .hl')]
-    .filter(s=>s.textContent.toLowerCase()==='a'||s.textContent.toLowerCase()==='y');
-  if(!spots.length) return null;
-  const el = spots[Math.random()*spots.length|0];
-  const r = el.getBoundingClientRect();
-  if(r.bottom < -40 || r.top > innerHeight+40) return null;
-  return {el, x:r.left+r.width/2, y:r.top+r.height/2};
-}
-let rings = [];
 function launchComet(){
-  const tgt = letterTarget();
-  if(tgt){
-    const dir = Math.random() < .5 ? 1 : -1;
-    comets.push({
-      x: dir === 1 ? -80 : mc.width + 80,
-      y: Math.random() * mc.height * .25 + 10,
-      tx: tgt.x, ty: tgt.y, tel: tgt.el,
-      life: 600, age: 0, trail: []
-    });
-    return;
-  }
   const dir = Math.random() < .5 ? 1 : -1;
   comets.push({
-    x: dir === 1 ? -80 : mc.width + 80,
-    y: Math.random() * mc.height * .3 + 20,
-    vx: dir * (4 + Math.random() * 2.5),
-    vy: 1.4 + Math.random() * 1,
-    life: 300, age: 0, broke: false, trail: []
+    x: Math.random()*mc.width*.7 + mc.width*.15,
+    y: -60,
+    vx: dir * (1 + Math.random() * 2),
+    vy: 3 + Math.random() * 2,
+    life: 320, age: 0, broke: false, trail: []
   });
 }
-function breakStar(c, big){
-  const n = big ? 46 : 30;
-  for(let i=0;i<n;i++){
-    const a = Math.random()*Math.PI*2, sp = (big ? .4 : 1) + Math.random()*(big ? 2 : 4);
-    cfrags.push({x:c.x, y:c.y, vx:Math.cos(a)*sp + (c.vx||0)*.25, vy:Math.sin(a)*sp + (big ? .4 : 1),
-      r:1+Math.random()*2.6, p:Math.random()*7, s:1.5+Math.random()*2.5,
-      c:['#ffffff','#ffd9a0','#ffb3c8','#e8b86d','#fff6d8'][Math.random()*5|0], life:(big?130:70)+Math.random()*60});
-  }
-}
-function impactStar(c){
-  breakStar(c, true);
-  rings.push({x:c.x, y:c.y, r:8, a:1});
-  rings.push({x:c.x, y:c.y, r:4, a:.9});
-  if(c.tel){
-    c.tel.classList.add('hit');
-    setTimeout(()=>c.tel.classList.remove('hit'), 2300);
+function breakStar(c){
+  for(let i=0;i<28;i++){
+    const a = Math.random()*Math.PI*2, sp = 1+Math.random()*3;
+    cfrags.push({x:c.x, y:c.y, vx:Math.cos(a)*sp + c.vx*.25, vy:Math.sin(a)*sp + 1,
+      r:1+Math.random()*2.4, p:Math.random()*7, s:1.5+Math.random()*2.5,
+      c:['#ffffff','#ffd9a0','#ffb3c8','#e8b86d'][Math.random()*4|0], life:70+Math.random()*50});
   }
 }
 setInterval(()=>{ if(document.visibilityState==='visible' && comets.length===0) launchComet(); }, 2000);
@@ -445,17 +403,11 @@ setTimeout(launchComet, 2500);
   requestAnimationFrame(cometLoop);
   mg.clearRect(0,0,mc.width,mc.height);
   mg.globalCompositeOperation = 'lighter';
-  comets = comets.filter(c=>c.age<c.life && c.x>-150 && c.x<mc.width+150);
+  comets = comets.filter(c=>c.age<c.life && c.x>-150 && c.x<mc.width+150 && c.y<mc.height+150);
   for(const c of comets){
-    c.age++;
-    if(c.tx !== undefined){
-      const dx = c.tx-c.x, dy = c.ty-c.y, d = Math.hypot(dx,dy) || 1;
-      if(d < 16){ impactStar(c); c.age = c.life; continue; }
-      const sp = Math.max(.9, Math.min(5, d*.05));
-      c.x += dx/d*sp; c.y += dy/d*sp;
-    } else { c.x+=c.vx; c.y+=c.vy; }
+    c.age++; c.x+=c.vx; c.y+=c.vy;
     c.trail.push({x:c.x,y:c.y}); if(c.trail.length>20) c.trail.shift();
-    if(!c.broke && c.tx === undefined && c.age>c.life*.55){ c.broke=true; breakStar(c); }
+    if(!c.broke && c.age>c.life*.55){ c.broke=true; breakStar(c); }
     for(let i=0;i<c.trail.length;i++){
       const p=c.trail[i], a2=i/c.trail.length;
       mg.globalAlpha = a2*.55;
@@ -475,16 +427,6 @@ setTimeout(launchComet, 2500);
     mg.globalAlpha = Math.min(1,f.life/35) * (.5+.5*Math.abs(Math.sin(t*f.s+f.p)));
     mg.fillStyle = f.c;
     mg.beginPath(); mg.arc(f.x,f.y,f.r,0,7); mg.fill();
-  }
-  rings = rings.filter(r=>r.a>0);
-  for(const r of rings){
-    r.r += 1.4; r.a -= .012;
-    mg.globalAlpha = Math.max(0, r.a);
-    mg.strokeStyle = '#ffd9a0'; mg.lineWidth = 2.5;
-    mg.beginPath(); mg.arc(r.x, r.y, r.r, 0, 7); mg.stroke();
-    mg.globalAlpha = Math.max(0, r.a*.5);
-    mg.strokeStyle = '#ff9dbe';
-    mg.beginPath(); mg.arc(r.x, r.y, r.r*.7, 0, 7); mg.stroke();
   }
   mg.globalAlpha = 1;
   mg.globalCompositeOperation = 'source-over';

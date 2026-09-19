@@ -20,12 +20,17 @@
   #confetti{position:fixed;inset:0;z-index:60;pointer-events:none}
   .wrap{max-width:900px;margin:0 auto;padding:0 22px;position:relative;z-index:2}
 
-  /* balloons */
-  .balloon{position:fixed;bottom:-160px;z-index:0;pointer-events:none;opacity:.85;
-    width:56px;height:74px;border-radius:50%/55% 55% 50% 50%;animation:rise linear infinite}
-  .balloon::after{content:"";position:absolute;left:50%;top:100%;width:2px;height:70px;
-    background:rgba(255,255,255,.35)}
-  @keyframes rise{to{transform:translateY(-120vh)}}
+  #comet{position:fixed;inset:0;z-index:-1;pointer-events:none}
+  /* corner balloons — small, tucked bottom-left, gentle bob */
+  .corner-bunch{position:fixed;left:14px;bottom:12px;z-index:1;pointer-events:none;
+    display:flex;align-items:flex-end;gap:3px;animation:bob 4.5s ease-in-out infinite}
+  .corner-bunch .cb{border-radius:50%/55% 55% 50% 50%;opacity:.92;position:relative}
+  .corner-bunch .cb::after{content:"";position:absolute;left:50%;top:100%;width:1.5px;height:26px;
+    background:rgba(255,255,255,.3)}
+  .cb.c1{width:26px;height:34px;background:radial-gradient(circle at 35% 30%,#ffffff88,transparent 42%),#ff6b9d}
+  .cb.c2{width:19px;height:26px;margin-bottom:12px;background:radial-gradient(circle at 35% 30%,#ffffff88,transparent 42%),#e8b86d}
+  .cb.c3{width:22px;height:29px;margin-bottom:5px;background:radial-gradient(circle at 35% 30%,#ffffff88,transparent 42%),#c9a7ff}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-12px) rotate(2deg)}}
 
   /* hero */
   .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
@@ -150,6 +155,8 @@
 <body>
 <canvas id="bg3d"></canvas>
 <div class="vignette"></div>
+<canvas id="comet"></canvas>
+<div class="corner-bunch"><div class="cb c1"></div><div class="cb c2"></div><div class="cb c3"></div></div>
 <canvas id="confetti"></canvas>
 <audio id="bgm" preload="auto" loop src="orchestral.mp3"></audio>
 
@@ -350,18 +357,7 @@ async function playTune(){
   tuneBtn();
 }
 
-/* ============ balloons ============ */
-const BCOLS = ['#ff6b9d','#e8b86d','#c9a7ff','#7dd3b8','#f6121d'];
-for(let i=0;i<7;i++){
-  const b = document.createElement('div');
-  b.className = 'balloon';
-  b.style.left = (4+Math.random()*90)+'vw';
-  b.style.background = `radial-gradient(circle at 35% 30%, #ffffff88, transparent 40%), ${BCOLS[i%BCOLS.length]}`;
-  b.style.animationDuration = (14+Math.random()*14)+'s';
-  b.style.animationDelay = (Math.random()*14)+'s';
-  b.style.transform = `scale(${.7+Math.random()*.7})`;
-  document.body.appendChild(b);
-}
+/* corner balloons are static HTML above — no more screen-filling rise */
 
 /* ============ heaven lantern release ============ */
 let heavenTimers = [];
@@ -388,6 +384,64 @@ function closeHeaven(){
   document.body.style.overflow = '';
   toast('Your wish is shining among the stars ✨');
 }
+
+/* ============ breaking star (comet that shatters into sparkles) ============ */
+const mc = document.getElementById('comet'), mg = mc.getContext('2d');
+function sizeComet(){ mc.width = innerWidth; mc.height = innerHeight; }
+addEventListener('resize', sizeComet); sizeComet();
+let comets = [], cfrags = [];
+function launchComet(){
+  const dir = Math.random() < .5 ? 1 : -1;
+  comets.push({
+    x: dir === 1 ? -80 : mc.width + 80,
+    y: Math.random() * mc.height * .3 + 20,
+    vx: dir * (8 + Math.random() * 5),
+    vy: 3.5 + Math.random() * 2.5,
+    life: 110, age: 0, broke: false, trail: []
+  });
+}
+function breakStar(c){
+  for(let i=0;i<30;i++){
+    const a = Math.random()*Math.PI*2, sp = 1+Math.random()*4;
+    cfrags.push({x:c.x, y:c.y, vx:Math.cos(a)*sp + c.vx*.25, vy:Math.sin(a)*sp + 1,
+      r:1+Math.random()*2.4, p:Math.random()*7, s:2+Math.random()*3,
+      c:['#ffffff','#ffd9a0','#ffb3c8','#e8b86d'][Math.random()*4|0], life:70+Math.random()*40});
+  }
+}
+setInterval(()=>{ if(document.visibilityState==='visible' && Math.random()<.75) launchComet(); }, 8000);
+setTimeout(launchComet, 2500);
+(function cometLoop(){
+  requestAnimationFrame(cometLoop);
+  mg.clearRect(0,0,mc.width,mc.height);
+  mg.globalCompositeOperation = 'lighter';
+  comets = comets.filter(c=>c.age<c.life && c.x>-150 && c.x<mc.width+150);
+  for(const c of comets){
+    c.age++; c.x+=c.vx; c.y+=c.vy;
+    c.trail.push({x:c.x,y:c.y}); if(c.trail.length>16) c.trail.shift();
+    if(!c.broke && c.age>c.life*.55){ c.broke=true; breakStar(c); }
+    for(let i=0;i<c.trail.length;i++){
+      const p=c.trail[i], a2=i/c.trail.length;
+      mg.globalAlpha = a2*.55;
+      mg.fillStyle = i%3 ? '#ffd9a0' : '#fff';
+      mg.beginPath(); mg.arc(p.x,p.y,1+a2*2.4,0,7); mg.fill();
+    }
+    const tw = .7+.3*Math.sin(c.age*.6);
+    mg.globalAlpha = tw;
+    const g = mg.createRadialGradient(c.x,c.y,0,c.x,c.y,26);
+    g.addColorStop(0,'rgba(255,255,255,.95)'); g.addColorStop(.35,'rgba(255,220,160,.55)'); g.addColorStop(1,'rgba(255,180,110,0)');
+    mg.fillStyle = g; mg.beginPath(); mg.arc(c.x,c.y,26,0,7); mg.fill();
+  }
+  cfrags = cfrags.filter(f=>f.life>0);
+  const t = Date.now()/1000;
+  for(const f of cfrags){
+    f.life--; f.x+=f.vx; f.y+=f.vy; f.vy+=.04; f.vx*=.985;
+    mg.globalAlpha = Math.min(1,f.life/35) * (.5+.5*Math.abs(Math.sin(t*f.s+f.p)));
+    mg.fillStyle = f.c;
+    mg.beginPath(); mg.arc(f.x,f.y,f.r,0,7); mg.fill();
+  }
+  mg.globalAlpha = 1;
+  mg.globalCompositeOperation = 'source-over';
+})();
 
 function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2400); }
 </script>

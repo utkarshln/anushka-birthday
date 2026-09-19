@@ -118,6 +118,33 @@
   .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#fff;color:#111;
     padding:12px 22px;border-radius:999px;font-weight:700;opacity:0;transition:.25s;z-index:80;font-family:-apple-system,sans-serif}
   .toast.show{opacity:1}
+  /* heaven lantern moment */
+  #heaven{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;
+    background:radial-gradient(ellipse at 50% 120%,rgba(20,8,20,.93),rgba(5,3,10,.97));overflow:hidden}
+  #heaven.show{display:flex}
+  #heaven-lantern{position:absolute;left:50%;bottom:-190px;transform:translateX(-50%) scale(.65);text-align:center;
+    transition:bottom 6.5s cubic-bezier(.3,.6,.3,1),transform 6.5s ease}
+  #heaven.show.go #heaven-lantern{bottom:60%;transform:translateX(-50%) scale(1.9)}
+  #heaven-lantern .hl-body{width:120px;height:150px;margin:0 auto;border-radius:46% 46% 48% 48%/38% 38% 62% 62%;
+    background:radial-gradient(ellipse at 50% 28%,#fff6d8,#ffcf7d 45%,#ff9d4d 75%,#b35a12);
+    box-shadow:0 0 60px 24px rgba(255,180,90,.55),0 0 170px 90px rgba(255,150,60,.25)}
+  #heaven-lantern .hl-glow{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:360px;height:360px;
+    border-radius:50%;background:radial-gradient(circle,rgba(255,200,110,.5),transparent 70%);z-index:-1}
+  #heaven-msg{position:absolute;left:50%;top:15%;transform:translateX(-50%);width:min(88vw,560px);text-align:center;
+    font-size:clamp(1.4rem,4vw,2.1rem);font-style:italic;color:#ffe9bd;opacity:0;transition:opacity 2.2s;
+    text-shadow:0 0 30px rgba(255,180,90,.95),0 2px 20px rgba(0,0,0,.85)}
+  #heaven.show.go #heaven-msg{opacity:1}
+  #bloom{position:absolute;inset:0;opacity:0;transition:opacity 3s;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 55%,rgba(255,236,190,.95),rgba(255,200,120,.55) 45%,transparent 75%)}
+  #heaven.peak #bloom{opacity:1}
+  #heaven-x{position:absolute;top:16px;right:16px;z-index:2;background:rgba(0,0,0,.5);color:#fff;
+    border:1px solid rgba(255,255,255,.3);width:40px;height:40px;border-radius:50%;cursor:pointer;font-size:1.1rem}
+  .wish-box{max-width:520px;margin:0 auto;text-align:center;background:rgba(0,0,0,.4);
+    border:1px solid rgba(232,184,109,.45);border-radius:20px;padding:26px;backdrop-filter:blur(8px)}
+  .wish-box input{width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.2);
+    color:#fff;border-radius:12px;padding:13px;font-size:1rem;font-family:inherit;margin-bottom:6px}
+  .wish-box input:focus{outline:none;border-color:var(--gold)}
+  .wish-box input::placeholder{color:rgba(255,255,255,.4)}
 </style>
 </head>
 <body>
@@ -165,6 +192,15 @@
   </section>
 
   <section>
+    <h2>Light a <em>lantern</em> for her 🏮</h2>
+    <p class="center">Write something from your heart — release it into her sky.</p>
+    <div class="wish-box">
+      <input id="wish-in" maxlength="70" placeholder="e.g. May all your dreams come true ✨" onkeydown="if(event.key==='Enter')releaseLantern()" />
+      <button class="btn btn-gold" onclick="releaseLantern()">🏮 Release into the sky</button>
+    </div>
+  </section>
+
+  <section>
     <h2>Make a wish, <em>birthday girl</em> 🎂</h2>
     <p class="center">Tap each flame to blow out the candles. Blow them all for a surprise.</p>
     <div class="cake-stage">
@@ -186,6 +222,12 @@
 </div>
 
 <footer>Handmade with ♥ by Utkarsh — for the girl with the 7th-October birthday.</footer>
+<div id="heaven">
+  <div id="bloom"></div>
+  <div id="heaven-msg"></div>
+  <div id="heaven-lantern"><div class="hl-glow"></div><div class="hl-body"></div></div>
+  <button id="heaven-x" onclick="closeHeaven()">✕</button>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -319,6 +361,32 @@ for(let i=0;i<7;i++){
   b.style.animationDelay = (Math.random()*14)+'s';
   b.style.transform = `scale(${.7+Math.random()*.7})`;
   document.body.appendChild(b);
+}
+
+/* ============ heaven lantern release ============ */
+let heavenTimers = [];
+function releaseLantern(){
+  const inp = document.getElementById('wish-in');
+  const v = (inp.value.trim() || 'Happiness, always ✨').replace(/[<>&]/g,'');
+  inp.value = '';
+  const H = document.getElementById('heaven');
+  document.getElementById('heaven-msg').textContent = '\u201C' + v + '\u201D';
+  H.classList.remove('go','peak');
+  H.classList.add('show');
+  document.body.style.overflow = 'hidden';
+  void H.offsetWidth;
+  requestAnimationFrame(()=>H.classList.add('go'));
+  heavenTimers.push(setTimeout(()=>H.classList.add('peak'), 4200));
+  heavenTimers.push(setTimeout(()=>confettiRain(2500), 4600));
+  heavenTimers.push(setTimeout(closeHeaven, 9200));
+  try{ if(!playing){ bgm.play().then(()=>{ playing = true; tuneBtn(); }).catch(()=>{}); } }catch(e){}
+}
+function closeHeaven(){
+  heavenTimers.forEach(clearTimeout); heavenTimers = [];
+  const H = document.getElementById('heaven');
+  H.classList.remove('show','go','peak');
+  document.body.style.overflow = '';
+  toast('Your wish is shining among the stars ✨');
 }
 
 function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2400); }
